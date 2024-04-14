@@ -31,9 +31,10 @@ class DiffKD(nn.Module):
         # diffusion model - predict noise
         self.model = DiffusionModel(channels_in=teacher_channels, kernel_size=kernel_size)
         self.scheduler = DDIMScheduler(num_train_timesteps=num_train_timesteps, clip_sample=False, beta_schedule="linear")
-        self.noise_adapter = NoiseAdapter(teacher_channels, kernel_size)
+        #self.noise_adapter = NoiseAdapter(teacher_channels, kernel_size)
         # pipeline for denoising student feature
-        self.pipeline = DDIMPipeline(self.model, self.scheduler, self.noise_adapter)
+        self.pipeline = DDIMPipeline(self.model, self.scheduler)
+        #self.pipeline = DDIMPipeline(self.model, self.scheduler, self.noise_adapter)
         self.proj = nn.Sequential(nn.Conv2d(teacher_channels, teacher_channels, 1), nn.BatchNorm2d(teacher_channels))
 
     def forward(self, student_feat, teacher_feat):
@@ -61,19 +62,22 @@ class DiffKD(nn.Module):
         refined_feat = self.proj(refined_feat)
         
         # train diffusion model
-        ddim_loss = self.ddim_loss(teacher_feat)
-        return refined_feat, teacher_feat, ddim_loss, rec_loss
+        ddim_loss = self.ddim_loss(teacher_feat, student_feat)
+        return refined_feat, teacher_feat, ddim_loss, rec_loss, student_feat
 
-    def ddim_loss(self, gt_feat):
+    def ddim_loss(self, t_feat, s_feat):
         # Sample noise to add to the images
-        noise = torch.randn(gt_feat.shape, device=gt_feat.device) #.to(gt_feat.device)
-        bs = gt_feat.shape[0]
+        noise = torch.randn(t_feat.shape, device=t_feat.device) #.to(gt_feat.device)
+        bs = t_feat.shape[0]
 
         # Sample a random timestep for each image
-        timesteps = torch.randint(0, self.scheduler.num_train_timesteps, (bs,), device=gt_feat.device).long()
+        timesteps = torch.randint(0, self.scheduler.num_train_timesteps, (bs,), device=t_feat.device).long()
         # Add noise to the clean images according to the noise magnitude at each timestep
         # (this is the forward diffusion process)
-        noisy_images = self.scheduler.add_noise(gt_feat, noise, timesteps)
-        noise_pred = self.model(noisy_images, timesteps)
-        loss = F.mse_loss(noise_pred, noise)
+        noisy_images_t = self.scheduler.add_noise(t_feat, noise, timesteps)
+        noise_pred_t = self.model(noisy_images_t, timesteps)
+        noisy_images_s = self.scheduler.add_noise(s_feat, noise, timesteps)
+        noise_pred_s = self.model(noisy_images_s, timesteps)
+        loss = F.mse_loss(noise_pred_t, noise_pred_s)
+        #loss = F.mse_loss(noise_pred, noise)
         return loss

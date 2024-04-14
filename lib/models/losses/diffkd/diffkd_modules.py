@@ -90,7 +90,7 @@ class DDIMPipeline:
         super().__init__()
         self.model = model
         self.scheduler = scheduler
-        self.noise_adapter = noise_adapter
+        #self.noise_adapter = noise_adapter
         self._iter = 0
         self.solver = solver
 
@@ -110,12 +110,13 @@ class DDIMPipeline:
         # Sample gaussian noise to begin loop
         image_shape = (batch_size, *shape)
 
-        if self.noise_adapter is not None:
-            noise = torch.randn(image_shape, device=device, dtype=dtype)
-            timesteps = self.noise_adapter(feat)
-            image = self.scheduler.add_noise_diff2(feat, noise, timesteps)
-        else:
-            image = feat
+        #if self.noise_adapter is not None:
+        #    noise = torch.randn(image_shape, device=device, dtype=dtype)
+        #    timesteps = self.noise_adapter(feat)
+        #    image = self.scheduler.add_noise_diff2(feat, noise, timesteps)
+        #else:
+        #    image = feat
+        image = feat
 
         # set step values
         self.scheduler.set_timesteps(num_inference_steps*2)

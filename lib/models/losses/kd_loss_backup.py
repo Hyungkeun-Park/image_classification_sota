@@ -110,7 +110,6 @@ class KDLoss():
         # dicts that store distillation outputs of student and teacher
         self._teacher_out = {}
         self._student_out = {}
-        self._student_out_org = {}
 
         for student_module, teacher_module in zip(student_modules, teacher_modules):
             self._register_forward_hook(student, student_module, teacher=False)
@@ -135,16 +134,14 @@ class KDLoss():
 
             # transform student feature
             if self.kd_method == 'diffkd':
-                #self._student_out[sm], self._teacher_out[tm], diff_loss, ae_loss = \
-                self._student_out[sm], self._teacher_out[tm], diff_loss, ae_loss, self._student_out_org = \
+                self._student_out[sm], self._teacher_out[tm], diff_loss, ae_loss = \
                     self.diff[tm](self._reshape_BCHW(self._student_out[sm]), self._reshape_BCHW(self._teacher_out[tm]))
             if hasattr(self, 'align'):
                 self._student_out[sm] = self.align(self._student_out[sm])
 
             # compute kd loss
             if isinstance(self.kd_loss, nn.ModuleDict):
-                kd_loss_ = self.kd_loss[tm](self._student_out[sm], self._student_out_org[tm])
-                #kd_loss_ = self.kd_loss[tm](self._student_out[sm], self._teacher_out[tm])
+                kd_loss_ = self.kd_loss[tm](self._student_out[sm], self._teacher_out[tm])
             else:
                 kd_loss_ = self.kd_loss(self._student_out[sm], self._teacher_out[tm])
 
@@ -165,7 +162,6 @@ class KDLoss():
 
         self._teacher_out = {}
         self._student_out = {}
-        self._student_out_org = {}
 
         self._iter += 1
         return ori_loss * self.ori_loss_weight + kd_loss * self.kd_loss_weight
