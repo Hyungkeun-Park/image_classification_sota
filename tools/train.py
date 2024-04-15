@@ -7,6 +7,9 @@ import random
 import numpy as np
 from torch.nn.parallel import DistributedDataParallel as DDP
 
+import sys
+sys.path.append(os.path.dirname(os.path.abspath(os.path.dirname(__file__))))
+
 from lib.models.builder import build_model
 from lib.models.losses import CrossEntropyLabelSmooth, \
     SoftTargetCrossEntropy

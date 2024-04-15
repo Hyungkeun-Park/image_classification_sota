@@ -8,6 +8,8 @@ from .dataloader import fast_collate, DataPrefetcher
 from .mixup import Mixup
 from . import transform
 
+from .imagenet import ImageNet
+
 
 def _check_torch_version(target='1.7.0'):
     if torch.__version__ == 'parrots':
@@ -54,8 +56,10 @@ def build_dataloader(args):
     if args.dataset == 'imagenet':
         train_transforms_l, train_transforms_r = transform.build_train_transforms(
             args.aa, args.color_jitter, args.reprob, args.remode, args.interpolation, args.image_mean, args.image_std)
-        train_dataset = ImageNetDataset(
-            os.path.join(args.data_path, 'train'), os.path.join(args.data_path, 'meta/train.txt'), transform=train_transforms_l)
+        train_folder = os.path.join(args.data_path, 'train')
+        train_dataset = ImageNet(train_folder, transform=train_transforms_l)
+        #train_dataset = ImageNetDataset(
+        #    os.path.join(args.data_path, 'train'), os.path.join(args.data_path, 'meta/train.txt'), transform=train_transforms_l)
     elif args.dataset == 'cifar10':
         train_transforms_l, train_transforms_r = transform.build_train_transforms_cifar10(
             args.cutout_length, args.image_mean, args.image_std)
@@ -84,7 +88,9 @@ def build_dataloader(args):
     # val
     if args.dataset == 'imagenet':
         val_transforms_l, val_transforms_r = transform.build_val_transforms(args.interpolation, args.image_mean, args.image_std)
-        val_dataset = ImageNetDataset(os.path.join(args.data_path, 'val'), os.path.join(args.data_path, 'meta/val.txt'), transform=val_transforms_l)
+        val_folder = os.path.join(args.data_path, 'val')
+        train_dataset = ImageNet(val_folder, transform=val_transforms_l)
+        #val_dataset = ImageNetDataset(os.path.join(args.data_path, 'val'), os.path.join(args.data_path, 'meta/val.txt'), transform=val_transforms_l)
     elif args.dataset == 'cifar10':
         val_transforms_l, val_transforms_r = transform.build_val_transforms_cifar10(args.image_mean, args.image_std)
         val_dataset = datasets.CIFAR10(root=args.data_path, train=False, download=True, transform=val_transforms_l)
